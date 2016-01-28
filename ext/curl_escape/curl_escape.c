@@ -3,6 +3,9 @@
 #include <ruby.h>
 
 VALUE ruby_curl_escape(VALUE self, VALUE str) {
+  int rest, cnt;
+  VALUE output;
+
   static CURL *curl;
   if (!curl) {
     curl = curl_easy_init();
@@ -12,22 +15,22 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
   char *cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
 
   if (cOutput) {
-    for (int cnt = 0; *(cOutput + cnt) != '\0'; cnt++) {
+    for (cnt = 0; *(cOutput + cnt) != '\0'; cnt++) {
       if (strncmp(cOutput + cnt, "%20", 3) == 0) {
         *(cOutput + cnt) = '+';
-        int rest = strlen(cOutput + cnt + 3);
+        rest = strlen(cOutput + cnt + 3);
         memmove(cOutput + cnt + 1, cOutput + cnt + 3, rest);
         *(cOutput + cnt + 1 + rest) = '\0';
       } else if (*(cOutput + cnt) == '~') {
         cOutput = realloc(cOutput, strlen(cOutput) + 2);
-        int rest = strlen(cOutput + cnt + 1);
+        rest = strlen(cOutput + cnt + 1);
         memmove(cOutput + cnt + 3, cOutput + cnt + 1, rest);
         *(cOutput + cnt + 3 + rest) = '\0';
         memcpy(cOutput + cnt, "%7E", 3);
       }
     }
 
-    VALUE output = rb_str_new2(cOutput);
+    output = rb_str_new2(cOutput);
     curl_free(cOutput);
     return output;
   } else {
