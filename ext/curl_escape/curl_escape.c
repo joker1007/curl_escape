@@ -19,8 +19,9 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
 
   if (cOutput) {
     int pos = 0;
-    char *buf = ALLOCA_N(char, strlen(cOutput) * 3);
-    rb_encoding* enc = rb_enc_get(str);
+    char *buf;
+    output = rb_enc_str_new(NULL, strlen(cOutput) * 3, rb_enc_get(str));
+    buf = RSTRING_PTR(output);
     for (cnt = 0; *(cOutput + cnt) != '\0'; cnt++) {
       if (strncmp(cOutput + cnt, "%20", 3) == 0) {
         buf[pos] = '+';
@@ -37,8 +38,8 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
     }
     buf[pos++] = '\0';
 
-    output = rb_enc_str_new_cstr(buf, enc);
     curl_free(cOutput);
+    rb_str_set_len(output, pos-1);
     return output;
   } else {
     return Qnil;
