@@ -1,6 +1,7 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <ruby.h>
+#include <ruby/encoding.h>
 
 VALUE ruby_curl_escape(VALUE self, VALUE str) {
   int cnt;
@@ -34,7 +35,8 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
     }
     buf[pos++] = '\0';
 
-    output = rb_str_new2(buf);
+    rb_encoding* enc = rb_enc_get(str);
+    output = rb_enc_str_new_cstr(buf, enc);
     curl_free(cOutput);
     return output;
   } else {
