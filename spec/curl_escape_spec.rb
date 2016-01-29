@@ -39,7 +39,7 @@ describe CurlEscape do
         }.to_not raise_error
       end
 
-      pending 'test_cgi_escape_preserve_encoding' do
+      specify 'test_cgi_escape_preserve_encoding' do
         expect(CurlEscape.escape("\xC0\<\<".force_encoding("US-ASCII")).encoding).to eq Encoding::US_ASCII
         expect(CurlEscape.escape("\xC0\<\<".force_encoding("ASCII-8BIT")).encoding).to eq Encoding::ASCII_8BIT
         expect(CurlEscape.escape("\xC0\<\<".force_encoding("UTF-8")).encoding).to eq Encoding::UTF_8
