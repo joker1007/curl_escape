@@ -15,7 +15,7 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
   }
 
   cStr = StringValueCStr(str);
-  cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
+  cOutput = curl_easy_escape(curl, cStr, RSTRING_LENINT(str));
 
   if (cOutput) {
     int pos = 0;
