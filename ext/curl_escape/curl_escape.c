@@ -6,19 +6,21 @@
 VALUE ruby_curl_escape(VALUE self, VALUE str) {
   int cnt;
   VALUE output;
+  char *cStr;
+  char *cOutput;
 
   static CURL *curl;
   if (!curl) {
     curl = curl_easy_init();
   }
 
-  char *cStr = StringValueCStr(str);
-  char *cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
-
-  int pos = 0;
-  char buf[strlen(cOutput) * 3];
+  cStr = StringValueCStr(str);
+  cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
 
   if (cOutput) {
+    int pos = 0;
+    char *buf = ALLOCA_N(char, strlen(cOutput) * 3);
+    rb_encoding* enc = rb_enc_get(str);
     for (cnt = 0; *(cOutput + cnt) != '\0'; cnt++) {
       if (strncmp(cOutput + cnt, "%20", 3) == 0) {
         buf[pos] = '+';
@@ -35,7 +37,6 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
     }
     buf[pos++] = '\0';
 
-    rb_encoding* enc = rb_enc_get(str);
     output = rb_enc_str_new_cstr(buf, enc);
     curl_free(cOutput);
     return output;
