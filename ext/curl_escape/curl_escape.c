@@ -36,10 +36,9 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
       }
       pos++;
     }
-    buf[pos++] = '\0';
 
     curl_free(cOutput);
-    rb_str_resize(output, pos-1);
+    rb_str_resize(output, pos);
     return output;
   } else {
     return Qnil;
