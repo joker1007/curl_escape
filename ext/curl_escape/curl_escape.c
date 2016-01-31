@@ -6,21 +6,23 @@
 char *alloc_output_buffer(char *cOutput);
 
 VALUE ruby_curl_escape(VALUE self, VALUE str) {
-  int cnt;
+  int cnt, pos;
   char c;
+  char *cStr, *cOutput, *buf;
+  char escaped_tilde[3] = "%7E";
   VALUE output;
+  rb_encoding *enc;
 
   static CURL *curl;
   if (!curl) {
     curl = curl_easy_init();
   }
 
-  char *cStr = StringValueCStr(str);
-  char *cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
+  cStr = StringValueCStr(str);
+  cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
 
-  int pos = 0;
-  char escaped_tilde[3] = "%7E";
-  char *buf = alloc_output_buffer(cOutput);
+  pos = 0;
+  buf = alloc_output_buffer(cOutput);
   if (cOutput) {
     for (cnt = 0; (c = *(cOutput + cnt)) != '\0'; cnt++) {
       if (c == '~') {
@@ -38,7 +40,7 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
     }
     buf[pos] = '\0';
 
-    rb_encoding* enc = rb_enc_get(str);
+    enc = rb_enc_get(str);
     output = rb_enc_str_new_cstr(buf, enc);
     curl_free(cOutput);
     free(buf);
