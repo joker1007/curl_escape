@@ -3,12 +3,12 @@
 #include <ruby.h>
 #include <ruby/encoding.h>
 
-char *alloc_output_buffer(char *cOutput);
+#define EXPAND_SIZE 40
 
-VALUE ruby_curl_escape(VALUE self, VALUE str) {
-  int cnt, pos;
+static VALUE ruby_curl_escape(VALUE self, VALUE str) {
+  int n, pos, len;
   char c;
-  char *cStr, *cOutput, *buf;
+  char *cStr, *cOutput;
   char escaped_tilde[3] = "%7E";
   VALUE output;
   rb_encoding *enc;
@@ -22,45 +22,43 @@ VALUE ruby_curl_escape(VALUE self, VALUE str) {
   cOutput = curl_easy_escape(curl, cStr, strlen(cStr));
 
   pos = 0;
-  buf = alloc_output_buffer(cOutput);
   if (cOutput) {
-    for (cnt = 0; (c = *(cOutput + cnt)) != '\0'; cnt++) {
+    for (n = 0; (c = *(cOutput + n)) != '\0'; n++) {
       if (c == '~') {
-        memcpy(buf + pos, escaped_tilde, 3);
-        pos += 2;
+        if (n - pos >= 2) {
+          memcpy(cOutput + pos, escaped_tilde, 3);
+          pos += 2;
+        } else {
+          cOutput = realloc(cOutput, strlen(cOutput) + EXPAND_SIZE);
+          len = strlen(cOutput + n);
+          memmove(cOutput + n + EXPAND_SIZE, cOutput + n, len + 1);
+          n += EXPAND_SIZE;
+          memcpy(cOutput + pos, escaped_tilde, 3);
+          pos += 2;
+        }
       } else if (c != '%') {
-        buf[pos] = c;
-      } else if (strncmp(cOutput + cnt, "%20", 3) == 0) {
-        buf[pos] = '+';
-        cnt += 2;
+        if (pos != n) {
+          *(cOutput + pos) = c;
+        }
+      } else if (strncmp(cOutput + n, "%20", 3) == 0) {
+        *(cOutput + pos) = '+';
+        n += 2;
       } else {
-        buf[pos] = c;
+        if (pos != n) {
+          *(cOutput + pos) = c;
+        }
       }
       pos++;
     }
-    buf[pos] = '\0';
+    *(cOutput + pos) = '\0';
 
     enc = rb_enc_get(str);
-    output = rb_enc_str_new_cstr(buf, enc);
+    output = rb_enc_str_new_cstr(cOutput, enc);
     curl_free(cOutput);
-    free(buf);
     return output;
   } else {
     return Qnil;
   }
-}
-
-char *alloc_output_buffer(char *cOutput) {
-  int i, tilde_cnt;
-  char *buf;
-  tilde_cnt = 0;
-  for (i = 0; *(cOutput + i) != '\0'; i++) {
-    if (*(cOutput + i) == '~') {
-      tilde_cnt++;
-    }
-  }
-  buf = (char *)malloc(i + tilde_cnt * 2);
-  return buf;
 }
 
 void Init_curl_escape(void) {
