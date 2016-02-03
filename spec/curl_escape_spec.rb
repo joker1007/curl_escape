@@ -1,14 +1,43 @@
 require 'spec_helper'
 require 'cgi'
 
-require 'curl_escape/core_ext/cgi'
-
 describe CurlEscape do
+  # benchmark
+  after(:all) do
+    if ENV["BENCHMARK"]
+      require 'fake_app'
+      require 'benchmark/ips'
+
+      Benchmark.ips do |x|
+        x.config(time: 15, warmup: 3)
+        x.report("cgi_escape")  {        CGI.escape("'Stop!' said~Fred") }
+        x.report("curl_escape") { CurlEscape.escape("'Stop!' said~Fred") }
+        x.compare!
+      end
+
+      job = nil
+      Benchmark.ips do |x|
+        job = x
+        job.config(time: 15, warmup: 3)
+        job.report("normal rails_url_helper")  { dummy_app.users_path(foo: "bar", array: ["arr1", "arr2", "arr3"], page: 1, per_page: 20) }
+      end
+
+      require 'curl_escape/core_ext/cgi'
+      job.list.clear
+      job.report("core_ext rails_url_helper")  { dummy_app.users_path(foo: "bar", array: ["arr1", "arr2", "arr3"], page: 1, per_page: 20) }
+      puts "-------------------------------------------------"
+      job.run_warmup
+      puts "-------------------------------------------------"
+      job.run
+      job.run_comparison
+    end
+  end
+
   describe '.escape' do
     it 'returns URL escaped string.' do
       str = 'Test String~あいうえお%foo_bar.html'
-      expect(CurlEscape.escape(str)).to eq(CGI.origin_escape(str))
-      expect(CGI.escape(str)).to eq(CGI.origin_escape(str))
+      expect(CurlEscape.escape(str)).to eq(CGI.escape(str))
+      expect(CGI.escape(str)).to eq(CGI.escape(str))
     end
 
     describe 'examples from ruby/spec spec/library/cgi/escape_spec.rb' do
